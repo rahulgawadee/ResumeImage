@@ -2,34 +2,17 @@ const fs = require("fs");
 const path = require("path");
 
 const structure = {
-  "pages": {
-    "index.js": "",
-    "about.js": "",
-    "api": {
-      "hello.js": "",
+  "api": {
+    "upload": {
+      "route.js": "",
+    },
+    "merge": {
+      "route.js": "",
+    },
+    "download": {
+      "route.js": "",
     },
   },
-  "components": {
-    "Navbar.js": "",
-    "Footer.js": "",
-  },
-  "lib": {
-    "apiClient.js": "",
-  },
-  "hooks": {
-    "useAuth.js": "",
-  },
-  "styles": {
-    "globals.css": "",
-    "Home.module.css": "",
-  },
-  "public": {
-    "favicon.ico": "",
-  },
-  ".env.local": "",
-  "next.config.js": "",
-  "tailwind.config.js": "",
-  "package.json": "",
 };
 
 function createStructure(basePath, obj) {
@@ -48,4 +31,4 @@ function createStructure(basePath, obj) {
 
 createStructure(process.cwd(), structure);
 
-console.log("✅ Project structure created successfully.");
+console.log("✅ API route structure created under api/");
