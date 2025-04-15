@@ -1,30 +1,45 @@
-import { PDFDocument, rgb } from 'pdf-lib';
-import fs from 'fs/promises';
-import path from 'path';
-import { NextResponse } from 'next/server';
+import { PDFDocument, rgb } from "pdf-lib";
+import fs from "fs/promises";
+import path from "path";
+import { NextResponse } from "next/server";
 
 export async function GET() {
-  const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-  const pdfPath = path.join(uploadsDir, 'resume.pdf');
-  const imagePath = path.join(uploadsDir, 'photo.jpg');
-  const outputPath = path.join(uploadsDir, 'merged.pdf');
+  try {
+    const uploadsDir = path.join(process.cwd(), "public", "uploads");
+    const pdfPath = path.join(uploadsDir, "resume.pdf");
+    const imagePath = path.join(uploadsDir, "photo.jpg");
+    const outputPath = path.join(uploadsDir, "merged.pdf");
 
-  const pdfBytes = await fs.readFile(pdfPath);
-  const imageBytes = await fs.readFile(imagePath);
+    // Read input files
+    const pdfBytes = await fs.readFile(pdfPath);
+    const imageBytes = await fs.readFile(imagePath);
+    // Load PDF and embed the image
+    const pdfDoc = await PDFDocument.load(pdfBytes);
+    const jpgImage = await pdfDoc.embedJpg(imageBytes);
 
-  const pdfDoc = await PDFDocument.load(pdfBytes);
-  const jpgImage = await pdfDoc.embedJpg(imageBytes);
+    // Get dimensions of the image and first page
+    const firstPage = pdfDoc.getPages()[0];
+    const { width, height } = firstPage.getSize();
 
-  const page = pdfDoc.addPage();
-  page.drawImage(jpgImage, {
-    x: 50,
-    y: 400,
-    width: 200,
-    height: 200,
-  });
+    // Define dimensions and position for the image
+    const imageWidth = 4 * 28.35; // 4 cm to points
+    const imageHeight = 4 * 28.35; // 4 cm to points
+    const margin = 20; // Margin from the top and left edge
 
-  const mergedPdf = await pdfDoc.save();
-  await fs.writeFile(outputPath, mergedPdf);
+    // Draw image on the first page (top-left corner)
+    firstPage.drawImage(jpgImage, {
+      x: margin,
+      y: height - imageHeight - margin,
+      width: imageWidth,
+      height: imageHeight,
+    });
 
-  return NextResponse.json({ message: 'Merged successfully' });
+    // Save the updated PDF
+    const mergedPdf = await pdfDoc.save();
+    await fs.writeFile(outputPath, mergedPdf);
+
+    return NextResponse.json({ message: "Merged successfully", outputPath });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }
