@@ -413,10 +413,10 @@ export default function Home() {
                     
                     <a
                       href="/api/download"
-                      className="block w-full text-center py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition items-center justify-center gap-2"
+                      className=" block w-full flex text-center py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition items-center justify-center gap-2"
                       download={`${pdfName.replace('.pdf', '')}_with_photo.pdf`}
                     >
-                      <Download className="w-5 h-5" />
+                      <Download className="ml-8  w-5 h-5" />
                       Download Enhanced Resume
                     </a>
                     
