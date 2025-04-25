@@ -33,33 +33,58 @@ export default function Home() {
       setStatus("Please select both a PDF resume and a photo.");
       return;
     }
-
+  
     setLoading(true);
     setStatus("Uploading files...");
     setStep(3);
-
+  
     const formData = new FormData();
     formData.append("pdf", pdf);
     formData.append("photo", photo);
-
+  
     try {
-      const uploadRes = await fetch("api/upload", {
+      // Step 1: Upload files and get base64
+      const uploadRes = await fetch("/api/upload", {
         method: "POST",
         body: formData,
       });
-
+  
       if (!uploadRes.ok) throw new Error("Upload failed");
-
+  
+      const { pdfBase64, photoBase64 } = await uploadRes.json();
+  
       setStatus("Merging PDF and photo...");
-
-      const mergeRes = await fetch(
-        `/api/merge?position=${position}&size=${size}`
-      );
+  
+      // Step 2: Send base64 content to merge API
+      const mergeRes = await fetch("/api/merge", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          pdfBase64,
+          photoBase64,
+          position,
+          size,
+        }),
+      });
+  
       if (!mergeRes.ok) throw new Error("Merge failed");
-
-      setStatus(
-        "Merge successful! Your resume with photo is ready to download."
-      );
+  
+      const { mergedPdfBase64 } = await mergeRes.json();
+  
+      // Step 3: Create a blob & download link
+      const blob = new Blob([Uint8Array.from(atob(mergedPdfBase64), c => c.charCodeAt(0))], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+  
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "merged_resume.pdf";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+  
+      setStatus("Merge successful! Your resume with photo is ready to download.");
       setStep(4);
     } catch (error) {
       setStatus(`Error: ${error.message}`);
@@ -67,7 +92,6 @@ export default function Home() {
       setLoading(false);
     }
   };
-
   const handleFileChange =
     (setter, nameSetter, previewSetter = null) =>
     (e) => {

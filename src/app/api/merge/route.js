@@ -1,29 +1,22 @@
 import { PDFDocument } from "pdf-lib";
-import fs from "fs/promises";
-import path from "path";
 import { NextResponse } from "next/server";
 
-export async function GET(request) {
+export async function POST(req) {
   try {
-    const { searchParams } = new URL(request.url);
-    const position = searchParams.get("position") || "top-left";
-    const size = searchParams.get("size") || "medium";
+    const { pdfBase64, photoBase64, position = "top-left", size = "medium" } = await req.json();
 
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    const pdfPath = path.join(uploadsDir, "resume.pdf");
-    const imagePath = path.join(uploadsDir, "photo.jpg");
-    const outputPath = path.join(uploadsDir, "merged.pdf");
+    // Decode base64 to Uint8Array
+    const pdfBytes = Uint8Array.from(atob(pdfBase64), c => c.charCodeAt(0));
+    const imageBytes = Uint8Array.from(atob(photoBase64), c => c.charCodeAt(0));
 
-    const pdfBytes = await fs.readFile(pdfPath);
-    const imageBytes = await fs.readFile(imagePath);
-
+    // Load PDF and embed image
     const pdfDoc = await PDFDocument.load(pdfBytes);
     const jpgImage = await pdfDoc.embedJpg(imageBytes);
 
     const firstPage = pdfDoc.getPages()[0];
     const { width, height } = firstPage.getSize();
 
-    // Set image size based on the selected option
+    // Set image size in cm and convert to points
     let imageWidthCm;
     switch (size.toLowerCase()) {
       case "small":
@@ -38,9 +31,8 @@ export async function GET(request) {
         break;
     }
 
-    // Convert cm to points (1 cm ≈ 28.35 points)
     const imageWidth = imageWidthCm * 28.35;
-    const imageHeight = imageWidth; // Keeping it square
+    const imageHeight = imageWidth;
     const margin = 20;
 
     const x = position === "top-left" ? margin : width - imageWidth - margin;
@@ -54,9 +46,9 @@ export async function GET(request) {
     });
 
     const mergedPdf = await pdfDoc.save();
-    await fs.writeFile(outputPath, mergedPdf);
+    const mergedPdfBase64 = Buffer.from(mergedPdf).toString("base64");
 
-    return NextResponse.json({ message: "Merged successfully", outputPath });
+    return NextResponse.json({ mergedPdfBase64 });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
